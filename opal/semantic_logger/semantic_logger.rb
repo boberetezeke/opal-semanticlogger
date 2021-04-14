@@ -47,12 +47,13 @@ module SemanticLogger
   end
   
   class Log
-    attr_reader :message, :level, :level_index
+    attr_reader :message, :level, :level_index, :tags
     
-    def initialize(message, level: :trace)
+    def initialize(message, level: :trace, tags: [])
       @message = message
       @level = level
       @level_index = LOGGING_LEVELS_HASH[level]
+      @tags = tags
     end
   end
   
@@ -68,17 +69,22 @@ module SemanticLogger
     end
     
     LOGGING_LEVELS.each do |sym|
-      define_method(sym) do |message, *args| 
+      define_method(sym) do |message, *args|
         log_at_level(sym, message, *args)
       end
     end
     
     def log_at_level(level, message, *args)
-      log(Log.new(message, level: level, level_index: LOGGING_LEVELS_HASH[level]))
+      # puts "message: #{message}"
+      if args.size == 1 && args.first.is_a?(Hash)
+        tags = args.first[:tags]
+        log(Log.new(message, level: level, tags: tags))
+      else
+        log(Log.new(message, level: level))
+      end
     end
     
     def log(log)
-      puts log.message
       SemanticLogger.appenders.each { |app| app.log(log) }
     end
     
